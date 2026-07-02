@@ -725,7 +725,25 @@ document.getElementById('btn-export-txt').addEventListener('click', async () => 
     const confirmed = await openNamingModal('single');
     if (!confirmed) return;
 
-    const documentName = formatOutputFilename(activeFile, true); 
+    let documentName = formatOutputFilename(activeFile, true); 
+    const MAX_TOPIC_LENGTH = 35; // Cap de segurança para limites de path do S.O.
+    
+    // Pipeline Defensivo de Tratamento do Tópico
+    const validTopics = activeFile.snippets
+        .map(s => sanitizeFilename(s.titulo)) // Remove acentos e caracteres especiais
+        .map(t => t.substring(0, MAX_TOPIC_LENGTH).replace(/_+$/, '')) // Corta em 35 chars e remove underlines finais órfãos
+        .filter(t => t.length > 0); // Descarta strings que ficaram vazias após a limpeza
+
+    // Lógica de sufixo com Fallback Semântico e limite para múltiplos envios
+    if (validTopics.length === 0) {
+        documentName += `_Sem_Titulo`;
+    } else if (validTopics.length === 1) {
+        documentName += `_${validTopics[0]}`;
+    } else {
+        // Regra de UX: Evita concatenar múltiplos tópicos e gerar falha de nome colossal
+        documentName += `_${validTopics[0]}_e_outros`;
+    }
+
     let textResult = `=== ARQUIVO DE CURADORIA DE TRECHOS ===\nDOCUMENTO DE ORIGEM: ${formatOutputFilename(activeFile, false)}\n\n`;
 
     activeFile.snippets.forEach(s => {
@@ -736,6 +754,8 @@ document.getElementById('btn-export-txt').addEventListener('click', async () => 
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `${documentName}.txt`;
+    
+    // Nota arquitetural: Se houver loops de download, o Browser adicionará "(1)" automaticamente.
     link.click();
 });
 
