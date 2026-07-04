@@ -52,6 +52,23 @@ const markerInstruction = document.getElementById('marker-instruction');
 const btnCancelMarker = document.getElementById('btn-cancel-marker');
 const activeFileSelect = document.getElementById('active-file-select');
 
+// Gerenciador Centralizado de Views (View Manager)
+function switchAppView(viewName) {
+    const dropZone = document.getElementById('drop-zone');
+    const workspace = document.getElementById('curation-workspace');
+    const btnAbsoluteHome = document.querySelector('.btn-home-absolute');
+
+    if (viewName === 'upload') {
+        workspace.classList.add('is-hidden');
+        dropZone.classList.remove('is-hidden');
+        if (btnAbsoluteHome) btnAbsoluteHome.classList.remove('is-hidden');
+    } else if (viewName === 'workspace') {
+        dropZone.classList.add('is-hidden');
+        if (btnAbsoluteHome) btnAbsoluteHome.classList.add('is-hidden');
+        workspace.classList.remove('is-hidden');
+    }
+}
+
 // ============================================================================
 // TRATAMENTO E SANITIZAÇÃO DE STRINGS
 // ============================================================================
@@ -72,8 +89,8 @@ document.getElementById('file-input').addEventListener('change', async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
     
-    document.getElementById('drop-zone').classList.add('is-hidden');
-    document.getElementById('curation-workspace').classList.remove('is-hidden');
+    // Delega a transição visual para o View Manager
+    switchAppView('workspace');
     
     // Reseta estado anterior antes do processamento do novo lote
     await destroyCurrentPDFView();
@@ -508,10 +525,8 @@ async function destroyCurrentPDFView() {
 async function resetAppToInitialState() {
     await destroyCurrentPDFView();
     
-    // Transição visual
-    document.getElementById('curation-workspace').classList.add('is-hidden');
-    const dropZone = document.getElementById('drop-zone');
-    dropZone.classList.remove('is-hidden');
+    // Transição visual centralizada
+    switchAppView('upload');
     
     // Limpeza de estado e formulários
     document.getElementById('file-input').value = ""; 
@@ -519,7 +534,7 @@ async function resetAppToInitialState() {
     resetExtractionState();
 
     // A11y: Devolve o foco seguro ao container principal para fluxo de teclado
-    dropZone.focus();
+    document.getElementById('drop-zone').focus();
 }
 
 // Ação 1: Voltar ao Portal (Redirecionamento controlado)
